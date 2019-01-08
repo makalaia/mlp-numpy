@@ -1,6 +1,6 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from sklearn.preprocessing import RobustScaler
 
 from utils import diff_sigmoid, sigmoid, mse
@@ -18,8 +18,9 @@ class MLP(object):
         self.biases = [np.zeros((y, 1)) for y in layers[1:]]
         self.weights = [weights_initializer(x, y) for x, y in zip(layers[:-1], layers[1:])]
         self.error_function = error_function
+        self.zs, self.activations = list(), list()
 
-    def forwardprop(self, x):
+    def forwardprop(self, x, training=True):
         x = x.T
         for i in range(self.num_layers - 2):
             x = np.dot(self.weights[i].T, x) + self.biases[i]
@@ -28,7 +29,11 @@ class MLP(object):
         x = x.T
         return x
 
+    def predict(self, x, training=False):
+        return self.forwardprop(x, training=training)
+
     def backprop(self, x, y):
+        #TODO: ACTIVATIONS and Zs AS CLASS ATTRIBUTES
         grad_b = [np.zeros(b.shape) for b in self.biases]
         grad_w = [np.zeros(w.shape) for w in self.weights]
 
@@ -51,7 +56,7 @@ class MLP(object):
         # backward pass
         dlda = self.error_function(activations[-1], y, diff=True)
         grad_b[-1] = dlda.sum(axis=0, keepdims=True).T
-        grad_w[-1] = np.dot(dlda.T, activations[-2]).T
+        grad_w[-1] = np.dot(dlda.T, activations[-2]).T  # linear output
         for i in range(2, self.num_layers):
             z = zs[-i]
             dadz = diff_sigmoid(z)

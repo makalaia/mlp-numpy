@@ -1,18 +1,16 @@
-import keras
-import time
-import numpy as np
 import os
-import pandas as pd
 import random as rn
-import tensorflow as tf
+import time
+
+import keras
 import keras.backend as K
 import matplotlib.pyplot as plt
-
-from keras.layers import Dense, Dropout, regularizers
+import numpy as np
+import tensorflow as tf
+from keras.layers import Dense
 from keras.models import Sequential
 from pandas import read_csv
 from sklearn.preprocessing import RobustScaler
-
 
 val_size = 120
 test_size = 60
@@ -57,9 +55,9 @@ if seed is not None:
 epochs = 200
 optmizer = keras.optimizers.SGD(lr=learning_rate)
 model = Sequential()
-model.add(Dense(32, input_shape=(x_train.shape[1],), activation='relu'))
+model.add(Dense(128, input_shape=(x_train.shape[1],), activation='relu'))
 model.add(Dense(64, activation='relu'))
-model.add(Dense(128, activation='relu'))
+model.add(Dense(32, activation='relu'))
 model.add(Dense(1))
 
 # fit
