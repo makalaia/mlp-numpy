@@ -9,7 +9,7 @@ def get_rmse(y, y_pred):
 
 def mse(y, y_pred, diff=False):
     if diff:
-        return 2 * (y - y_pred)
+        return 2 * (y_pred - y)
     else:
         n = len(y)
         return np.sum((y-y_pred)**2/n)

@@ -20,7 +20,25 @@ class MLP(object):
         self.error_function = error_function
         self.zs, self.activations = list(), list()
 
-    def forwardprop(self, x, training=True):
+    def forwardprop(self, x):
+        self.zs.clear()
+        self.activations.clear()
+
+        activation = x
+        self.activations.append(activation)
+        for i in range(self.num_layers - 2):
+            z = np.dot(self.weights[i].T, activation.T) + self.biases[i]
+            z = z.T
+            self.zs.append(z)
+            activation = sigmoid(z)
+            self.activations.append(activation)
+        z = np.dot(self.weights[self.num_layers - 2].T, activation.T) + self.biases[self.num_layers - 2]  # linear output
+        z = z.T
+        self.zs.append(z)
+        activation = z
+        self.activations.append(activation)
+
+    def predict(self, x):
         x = x.T
         for i in range(self.num_layers - 2):
             x = np.dot(self.weights[i].T, x) + self.biases[i]
@@ -29,40 +47,20 @@ class MLP(object):
         x = x.T
         return x
 
-    def predict(self, x, training=False):
-        return self.forwardprop(x, training=training)
-
-    def backprop(self, x, y):
-        #TODO: ACTIVATIONS and Zs AS CLASS ATTRIBUTES
+    def backprop(self, y):
         grad_b = [np.zeros(b.shape) for b in self.biases]
         grad_w = [np.zeros(w.shape) for w in self.weights]
 
-        # forward pass
-        activation = x
-        activations = [x]
-        zs = []
-        for i in range(self.num_layers - 2):
-            z = np.dot(self.weights[i].T, activation.T) + self.biases[i]
-            z = z.T
-            zs.append(z)
-            activation = sigmoid(z)
-            activations.append(activation)
-        z = np.dot(self.weights[self.num_layers - 2].T, activation.T) + self.biases[self.num_layers - 2]  # linear output
-        z = z.T
-        zs.append(z)
-        activation = z
-        activations.append(activation)
-
         # backward pass
-        dlda = self.error_function(activations[-1], y, diff=True)
+        dlda = self.error_function(y, self.activations[-1], diff=True)
         grad_b[-1] = dlda.sum(axis=0, keepdims=True).T
-        grad_w[-1] = np.dot(dlda.T, activations[-2]).T  # linear output
+        grad_w[-1] = np.dot(dlda.T, self.activations[-2]).T  # linear output
         for i in range(2, self.num_layers):
-            z = zs[-i]
+            z = self.zs[-i]
             dadz = diff_sigmoid(z)
             dlda = np.dot(self.weights[-i + 1], dlda.T).T * dadz
             grad_b[-i] = dlda.sum(axis=0, keepdims=True).T
-            dzdw = activations[-i - 1]
+            dzdw = self.activations[-i - 1]
             grad_w[-i] = np.dot(dlda.T, dzdw).T
         return grad_b, grad_w
 
@@ -90,13 +88,18 @@ class MLP(object):
     def update_batch(self, batch, lr):
         x, y = batch
         m = len(y)
-        grad_b, grad_w = self.backprop(x, y)
+
+        # get gradients
+        self.forwardprop(x)
+        grad_b, grad_w = self.backprop(y)
+
+        # update weights
         self.weights = [weights - (lr / m) * gw for weights, gw in zip(self.weights, grad_w)]
         self.biases = [b - (lr / m) * biases for b, biases in zip(self.biases, grad_b)]
 
     def evaluate(self, val_data):
         x, y = val_data
-        y_pred = self.forwardprop(x)
+        y_pred = self.predict(x)
         return self.error_function(y, y_pred)
 
 
@@ -135,7 +138,7 @@ if __name__ == '__main__':
     loss = mlp.SGD(training_data, epochs=epochs, batch_size=32, lr=0.01, val_data=val_data, shuffle=False)
 
     plt.plot(y_train)
-    plt.plot(mlp.forwardprop(x_train))
+    plt.plot(mlp.predict(x_train))
     plt.title('TRAINING DATA')
     plt.show()
     #
